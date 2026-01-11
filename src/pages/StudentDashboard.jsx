@@ -1,7 +1,12 @@
-import React, {useState, useEffect} from 'react'
+import React, { useState, useEffect } from 'react'
 import api from '../services/api'
+import Header from '../components/Header'
+import StudentProfile from './StudentProfile'
+import ExploreCourses from './ExploreCourses'
+import '../styles.css'
 
 export default function StudentDashboard(){
+  const [activeView, setActiveView] = useState('dashboard')
   const [courses, setCourses] = useState([])
   const [modules, setModules] = useState(null)
   const [selectedCourse, setSelectedCourse] = useState(null)
@@ -17,8 +22,36 @@ export default function StudentDashboard(){
   const loadCourses = async () => {
     try{
       setLoading(true)
-      const res = await api.get('/api/student/courses')
-      setCourses(res.data.courses || [])
+      // Get student profile to see assigned courses
+      const userId = localStorage.getItem('userId')
+      if (!userId) {
+        setMsg({ type: 'error', text: 'Please log in first' })
+        return
+      }
+      
+      const studentRes = await api.get(`/api/students/${userId}`)
+      const studentCourses = studentRes.data.courses || []
+      
+      // Fetch course details for each assigned course
+      const courseDetails = await Promise.all(
+        studentCourses.map(async (assignment) => {
+          try {
+            const res = await api.get(`/api/courses/${assignment.courseId}`)
+            return {
+              ...res.data,
+              assignedAt: assignment.assignedAt,
+              expiresAt: assignment.expiresAt,
+              modulesCompleted: assignment.modulesCompleted || []
+            }
+          } catch (err) {
+            console.error('Error loading course:', err)
+            return null
+          }
+        })
+      )
+      
+      // Filter out any null values
+      setCourses(courseDetails.filter(c => c !== null))
     }catch(e){ 
       setMsg({ type: 'error', text: e.response?.data?.message || 'Error loading courses' })
     } finally {
@@ -61,16 +94,60 @@ export default function StudentDashboard(){
 
   const logout = ()=>{ localStorage.clear(); window.location.href = '/login' }
 
+  // Render profile or explore pages with header
+  if (activeView === 'profile') {
+    return (
+      <>
+        <Header
+          userType="student"
+          navigation={[
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'explore', label: 'Explore Courses' },
+            { id: 'profile', label: 'My Profile' }
+          ]}
+          currentNav={activeView}
+          onNavClick={setActiveView}
+        />
+        <StudentProfile />
+      </>
+    );
+  }
+
+  if (activeView === 'explore') {
+    return (
+      <>
+        <Header
+          userType="student"
+          navigation={[
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'explore', label: 'Explore Courses' },
+            { id: 'profile', label: 'My Profile' }
+          ]}
+          currentNav={activeView}
+          onNavClick={setActiveView}
+        />
+        <ExploreCourses />
+      </>
+    );
+  }
+
+  // Dashboard view
+
   return (
     <div>
-      <header>
-        <div className="header-content">
-          <div className="logo">StudentPortal</div>
-          <div className="header-actions">
-            <button className="btn-danger btn-sm" onClick={logout}>Logout</button>
-          </div>
-        </div>
-      </header>
+      <Header
+        userType="student"
+        navigation={[
+          { id: 'dashboard', label: 'Dashboard' },
+          { id: 'explore', label: 'Explore Courses' },
+          { id: 'profile', label: 'My Profile' }
+        ]}
+        currentNav={activeView}
+        onNavClick={(navId) => {
+          setActiveView(navId);
+          setSelectedCourse(null);
+        }}
+      />
 
       <div className="container">
         {msg && (
