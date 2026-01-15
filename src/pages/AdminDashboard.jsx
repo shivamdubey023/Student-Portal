@@ -15,8 +15,17 @@ export default function AdminDashboard() {
   // Form states
   const [newStudent, setNewStudent] = useState({ username: '', name: '', email: '', password: '', assignedCourses: [] });
   const [newCourse, setNewCourse] = useState({ 
-    title: '', description: '', duration: '2 Months', mode: 'Remote', 
-    category: 'Core Training', tools: [], learnTopics: [], certification: '' 
+    title: '', description: '', duration: '1 Month', mode: 'Remote', 
+    category: 'Core Training', tools: [], learnTopics: [], certification: '',
+    startDate: '', totalWeeks: 4
+  });
+  const [newAssignment, setNewAssignment] = useState({
+    courseId: '', title: '', description: '', blogLinks: [], githubLinks: [], studyMaterials: [],
+    dueDate: '', repositoryUrl: '', instructions: '', order: 1, week: 1, releaseDate: ''
+  });
+  const [newExam, setNewExam] = useState({
+    courseId: '', title: '', description: '', questions: [{ question: '', options: ['', '', '', ''], correctAnswer: 0 }],
+    passingScore: 70, duration: 60, dueDate: '', order: 1, week: 1, releaseDate: ''
   });
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -82,11 +91,16 @@ export default function AdminDashboard() {
     e.preventDefault();
     try {
       setLoading(true);
-      const res = await api.post('/api/courses', newCourse);
+      const courseData = {
+        ...newCourse,
+        startDate: newCourse.startDate ? new Date(newCourse.startDate) : undefined
+      };
+      const res = await api.post('/api/courses', courseData);
       setMsg({ type: 'success', text: `Course created: ${res.data.title}` });
       setNewCourse({ 
-        title: '', description: '', duration: '2 Months', mode: 'Remote', 
-        category: 'Core Training', tools: [], learnTopics: [], certification: '' 
+        title: '', description: '', duration: '1 Month', mode: 'Remote', 
+        category: 'Core Training', tools: [], learnTopics: [], certification: '',
+        startDate: '', totalWeeks: 4
       });
       loadDashboard();
     } catch (err) {
@@ -105,6 +119,55 @@ export default function AdminDashboard() {
       loadDashboard();
     } catch (err) {
       setMsg({ type: 'error', text: 'Error deleting course' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createAssignment = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.post(`/api/admin/courses/${newAssignment.courseId}/assignments`, newAssignment);
+      setMsg({ type: 'success', text: 'Assignment created successfully' });
+      setNewAssignment({
+        courseId: '', title: '', description: '', blogLinks: [], githubLinks: [], studyMaterials: [],
+        dueDate: '', repositoryUrl: '', instructions: '', order: 1
+      });
+      loadDashboard();
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Error creating assignment' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createExam = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await api.post(`/api/admin/courses/${newExam.courseId}/exams`, newExam);
+      setMsg({ type: 'success', text: 'Exam created successfully' });
+      setNewExam({
+        courseId: '', title: '', description: '', questions: [{ question: '', options: ['', '', '', ''], correctAnswer: 0 }],
+        passingScore: 70, duration: 60, dueDate: '', order: 1
+      });
+      loadDashboard();
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Error creating exam' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reviewSubmission = async (submissionId, status, feedback) => {
+    try {
+      setLoading(true);
+      await api.post(`/api/admin/submissions/${submissionId}/review`, { status, feedback });
+      setMsg({ type: 'success', text: 'Submission reviewed' });
+      loadDashboard();
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.message || 'Error reviewing submission' });
     } finally {
       setLoading(false);
     }
@@ -135,6 +198,8 @@ export default function AdminDashboard() {
           { id: 'dashboard', label: 'Dashboard' },
           { id: 'students', label: 'Students' },
           { id: 'courses', label: 'Courses' },
+          {id: 'assignments', label: 'Assignments' },
+          {id: 'exams', label: 'Exams' },
           { id: 'submissions', label: 'Submissions' }
         ]}
         currentNav={activeTab}
@@ -148,20 +213,6 @@ export default function AdminDashboard() {
             <button onClick={() => setMsg(null)} className="alert-close">×</button>
           </div>
         )}
-
-        {/* Tabs */}
-        <div className="admin-tabs">
-          {['dashboard', 'students', 'courses', 'submissions'].map(tab => (
-            <button
-              key={tab}
-              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-              style={{ display: 'none' }}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
@@ -350,6 +401,7 @@ export default function AdminDashboard() {
                       type="text"
                       value={newCourse.duration}
                       onChange={(e) => setNewCourse({ ...newCourse, duration: e.target.value })}
+                      placeholder="1 Month"
                       disabled={loading}
                     />
                   </div>
@@ -364,6 +416,26 @@ export default function AdminDashboard() {
                       <option>In-Person</option>
                       <option>Hybrid</option>
                     </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Start Date</label>
+                    <input
+                      type="date"
+                      value={newCourse.startDate}
+                      onChange={(e) => setNewCourse({ ...newCourse, startDate: e.target.value })}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Total Weeks</label>
+                    <input
+                      type="number"
+                      value={newCourse.totalWeeks}
+                      onChange={(e) => setNewCourse({ ...newCourse, totalWeeks: parseInt(e.target.value) })}
+                      min="1"
+                      max="12"
+                      disabled={loading}
+                    />
                   </div>
                   <button type="submit" className="btn-primary" disabled={loading}>
                     {loading ? 'Creating...' : 'Create Course'}
@@ -396,6 +468,295 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Assignments Tab */}
+        {activeTab === 'assignments' && (
+          <div className="admin-section">
+            <div className="form-card">
+              <h3>➕ Create New Assignment</h3>
+              <form onSubmit={createAssignment}>
+                <div className="form-group">
+                  <label>Course</label>
+                  <select
+                    value={newAssignment.courseId}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, courseId: e.target.value })}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select Course</option>
+                    {courses.map(course => (
+                      <option key={course._id} value={course._id}>{course.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Title</label>
+                  <input
+                    type="text"
+                    value={newAssignment.title}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea
+                    value={newAssignment.description}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Blog Links (one per line)</label>
+                  <textarea
+                    value={newAssignment.blogLinks.join('\n')}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, blogLinks: e.target.value.split('\n').filter(link => link.trim()) })}
+                    placeholder="https://blog.example.com/post1&#10;https://blog.example.com/post2"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>GitHub Links (one per line)</label>
+                  <textarea
+                    value={newAssignment.githubLinks.join('\n')}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, githubLinks: e.target.value.split('\n').filter(link => link.trim()) })}
+                    placeholder="https://github.com/user/repo&#10;https://github.com/user/repo2"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Study Materials (one per line)</label>
+                  <textarea
+                    value={newAssignment.studyMaterials.join('\n')}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, studyMaterials: e.target.value.split('\n').filter(link => link.trim()) })}
+                    placeholder="https://docs.example.com/guide&#10;https://tutorial.example.com"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Due Date</label>
+                  <input
+                    type="datetime-local"
+                    value={newAssignment.dueDate}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, dueDate: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Repository URL</label>
+                  <input
+                    type="url"
+                    value={newAssignment.repositoryUrl}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, repositoryUrl: e.target.value })}
+                    placeholder="https://github.com/org/assignment-repo"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Submission Instructions</label>
+                  <textarea
+                    value={newAssignment.instructions}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, instructions: e.target.value })}
+                    placeholder="Step-by-step instructions for submission..."
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Week</label>
+                  <select
+                    value={newAssignment.week}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, week: parseInt(e.target.value) })}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select Week</option>
+                    {[1, 2, 3, 4].map(week => (
+                      <option key={week} value={week}>Week {week}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Release Date</label>
+                  <input
+                    type="datetime-local"
+                    value={newAssignment.releaseDate}
+                    onChange={(e) => setNewAssignment({ ...newAssignment, releaseDate: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Assignment'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Exams Tab */}
+        {activeTab === 'exams' && (
+          <div className="admin-section">
+            <div className="form-card">
+              <h3>➕ Create New Exam</h3>
+              <form onSubmit={createExam}>
+                <div className="form-group">
+                  <label>Course</label>
+                  <select
+                    value={newExam.courseId}
+                    onChange={(e) => setNewExam({ ...newExam, courseId: e.target.value })}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select Course</option>
+                    {courses.map(course => (
+                      <option key={course._id} value={course._id}>{course.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Title</label>
+                  <input
+                    type="text"
+                    value={newExam.title}
+                    onChange={(e) => setNewExam({ ...newExam, title: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea
+                    value={newExam.description}
+                    onChange={(e) => setNewExam({ ...newExam, description: e.target.value })}
+                    disabled={loading}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Questions</label>
+                  {newExam.questions.map((q, qIndex) => (
+                    <div key={qIndex} className="question-block">
+                      <input
+                        type="text"
+                        placeholder="Question"
+                        value={q.question}
+                        onChange={(e) => {
+                          const questions = [...newExam.questions];
+                          questions[qIndex].question = e.target.value;
+                          setNewExam({ ...newExam, questions });
+                        }}
+                        required
+                        disabled={loading}
+                      />
+                      {q.options.map((option, oIndex) => (
+                        <div key={oIndex} className="option-block">
+                          <input
+                            type="radio"
+                            name={`correct-${qIndex}`}
+                            checked={q.correctAnswer === oIndex}
+                            onChange={() => {
+                              const questions = [...newExam.questions];
+                              questions[qIndex].correctAnswer = oIndex;
+                              setNewExam({ ...newExam, questions });
+                            }}
+                            disabled={loading}
+                          />
+                          <input
+                            type="text"
+                            placeholder={`Option ${oIndex + 1}`}
+                            value={option}
+                            onChange={(e) => {
+                              const questions = [...newExam.questions];
+                              questions[qIndex].options[oIndex] = e.target.value;
+                              setNewExam({ ...newExam, questions });
+                            }}
+                            required
+                            disabled={loading}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className="btn-secondary btn-sm"
+                    onClick={() => setNewExam({
+                      ...newExam,
+                      questions: [...newExam.questions, { question: '', options: ['', '', '', ''], correctAnswer: 0 }]
+                    })}
+                    disabled={loading}
+                  >
+                    Add Question
+                  </button>
+                </div>
+                
+                <div className="form-group">
+                  <label>Passing Score (%)</label>
+                  <input
+                    type="number"
+                    value={newExam.passingScore}
+                    onChange={(e) => setNewExam({ ...newExam, passingScore: parseInt(e.target.value) })}
+                    min="0"
+                    max="100"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Duration (minutes)</label>
+                  <input
+                    type="number"
+                    value={newExam.duration}
+                    onChange={(e) => setNewExam({ ...newExam, duration: parseInt(e.target.value) })}
+                    min="1"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Due Date</label>
+                  <input
+                    type="datetime-local"
+                    value={newExam.dueDate}
+                    onChange={(e) => setNewExam({ ...newExam, dueDate: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Week</label>
+                  <select
+                    value={newExam.week}
+                    onChange={(e) => setNewExam({ ...newExam, week: parseInt(e.target.value) })}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select Week</option>
+                    {[1, 2, 3, 4].map(week => (
+                      <option key={week} value={week}>Week {week}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Release Date</label>
+                  <input
+                    type="datetime-local"
+                    value={newExam.releaseDate}
+                    onChange={(e) => setNewExam({ ...newExam, releaseDate: e.target.value })}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Exam'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Submissions Tab */}
         {activeTab === 'submissions' && (
           <div className="admin-section">
@@ -408,13 +769,37 @@ export default function AdminDashboard() {
                   {submissions.map((sub) => (
                     <div key={sub._id} className="list-item">
                       <div>
-                        <strong>{sub.studentUserId}</strong>
-                        <div className="text-secondary">{sub.courseName} - Module {sub.moduleOrder}</div>
-                        <div className="text-secondary small">{new Date(sub.timestamp).toLocaleDateString()}</div>
-                        <span className={`status-badge status-${sub.status?.toLowerCase()}`}>{sub.status}</span>
+                        <strong>{sub.studentId?.userId || sub.studentUserId}</strong>
+                        <div className="text-secondary">
+                          {sub.type === 'assignment' ? 
+                            `Assignment ${sub.assignmentSubmission?.assignmentOrder} - ${sub.courseId?.title}` :
+                            sub.type === 'exam' ?
+                            `Exam ${sub.examSubmission?.examOrder} - ${sub.courseId?.title}` :
+                            sub.type === 'certificate' ?
+                            `Certificate - ${sub.courseId?.title}` :
+                            `${sub.courseName} - Module ${sub.moduleOrder}`
+                          }
+                        </div>
+                        <div className="text-secondary small">
+                          {sub.type === 'assignment' ? new Date(sub.assignmentSubmission?.submittedAt).toLocaleDateString() :
+                           sub.type === 'exam' ? new Date(sub.examSubmission?.submittedAt).toLocaleDateString() :
+                           sub.type === 'certificate' ? new Date(sub.certificate?.issuedAt).toLocaleDateString() :
+                           new Date(sub.timestamp).toLocaleDateString()}
+                        </div>
+                        <span className={`status-badge status-${(sub.assignmentSubmission?.status || sub.examSubmission?.passed || sub.status || 'submitted')?.toLowerCase()}`}>
+                          {sub.type === 'assignment' ? sub.assignmentSubmission?.status :
+                           sub.type === 'exam' ? (sub.examSubmission?.passed ? 'Passed' : 'Failed') :
+                           sub.type === 'certificate' ? 'Issued' :
+                           sub.status}
+                        </span>
                       </div>
                       <div className="actions">
-                        <a href={sub.link} target="_blank" rel="noopener noreferrer" className="btn-sm btn-info">Link</a>
+                        {sub.type === 'assignment' && sub.assignmentSubmission?.repositoryUrl && (
+                          <a href={sub.assignmentSubmission.repositoryUrl} target="_blank" rel="noopener noreferrer" className="btn-sm btn-info">Repo</a>
+                        )}
+                        {sub.type === 'exam' && (
+                          <span className="btn-sm btn-secondary">Score: {sub.examSubmission?.score}%</span>
+                        )}
                         <button onClick={() => setSelectedSubmission(sub)} className="btn-sm btn-primary">Details</button>
                       </div>
                     </div>
@@ -427,19 +812,75 @@ export default function AdminDashboard() {
               <div className="detail-card">
                 <h3>Submission Details</h3>
                 <div className="detail-grid">
-                  <div><strong>Student:</strong> {selectedSubmission.studentUserId}</div>
-                  <div><strong>Roll ID:</strong> {selectedSubmission.studentRollId}</div>
-                  <div><strong>Course:</strong> {selectedSubmission.courseName}</div>
-                  <div><strong>Module:</strong> {selectedSubmission.moduleOrder}</div>
-                  <div><strong>Status:</strong> {selectedSubmission.status}</div>
-                  <div><strong>Submitted:</strong> {new Date(selectedSubmission.timestamp).toLocaleDateString()}</div>
-                  <div><strong>Link:</strong> <a href={selectedSubmission.link} target="_blank" rel="noopener noreferrer">View</a></div>
+                  <div><strong>Student:</strong> {selectedSubmission.studentId?.userId || selectedSubmission.studentUserId}</div>
+                  <div><strong>Type:</strong> {selectedSubmission.type}</div>
+                  <div><strong>Course:</strong> {selectedSubmission.courseId?.title || selectedSubmission.courseName}</div>
+                  
+                  {selectedSubmission.type === 'assignment' && (
+                    <>
+                      <div><strong>Assignment:</strong> {selectedSubmission.assignmentSubmission?.assignmentOrder}</div>
+                      <div><strong>Repository:</strong> <a href={selectedSubmission.assignmentSubmission?.repositoryUrl} target="_blank" rel="noopener noreferrer">View</a></div>
+                      {selectedSubmission.assignmentSubmission?.pullRequestUrl && (
+                        <div><strong>Pull Request:</strong> <a href={selectedSubmission.assignmentSubmission?.pullRequestUrl} target="_blank" rel="noopener noreferrer">View</a></div>
+                      )}
+                      <div><strong>Status:</strong> {selectedSubmission.assignmentSubmission?.status}</div>
+                      <div><strong>Feedback:</strong> {selectedSubmission.assignmentSubmission?.feedback || 'None'}</div>
+                    </>
+                  )}
+                  
+                  {selectedSubmission.type === 'exam' && (
+                    <>
+                      <div><strong>Exam:</strong> {selectedSubmission.examSubmission?.examOrder}</div>
+                      <div><strong>Score:</strong> {selectedSubmission.examSubmission?.score}%</div>
+                      <div><strong>Passed:</strong> {selectedSubmission.examSubmission?.passed ? 'Yes' : 'No'}</div>
+                      <div><strong>Time Taken:</strong> {selectedSubmission.examSubmission?.timeTaken} minutes</div>
+                    </>
+                  )}
+                  
+                  {selectedSubmission.type === 'certificate' && (
+                    <>
+                      <div><strong>Certificate Number:</strong> {selectedSubmission.certificate?.certificateNumber}</div>
+                      <div><strong>Payment Status:</strong> {selectedSubmission.certificate?.paymentStatus}</div>
+                      <div><strong>Fee:</strong> ₹{selectedSubmission.certificate?.paymentAmount}</div>
+                    </>
+                  )}
+                  
+                  <div><strong>Submitted:</strong> {
+                    selectedSubmission.type === 'assignment' ? new Date(selectedSubmission.assignmentSubmission?.submittedAt).toLocaleDateString() :
+                    selectedSubmission.type === 'exam' ? new Date(selectedSubmission.examSubmission?.submittedAt).toLocaleDateString() :
+                    selectedSubmission.type === 'certificate' ? new Date(selectedSubmission.certificate?.issuedAt).toLocaleDateString() :
+                    new Date(selectedSubmission.timestamp).toLocaleDateString()
+                  }</div>
                 </div>
-                <div className="status-actions">
-                  <button onClick={() => updateSubmissionStatus(selectedSubmission._id, 'Reviewed')} className="btn-sm btn-warning">Mark Reviewed</button>
-                  <button onClick={() => updateSubmissionStatus(selectedSubmission._id, 'Approved')} className="btn-sm btn-success">Approve</button>
-                  <button onClick={() => updateSubmissionStatus(selectedSubmission._id, 'Rejected')} className="btn-sm btn-danger">Reject</button>
-                </div>
+                
+                {selectedSubmission.type === 'assignment' && selectedSubmission.assignmentSubmission?.status === 'Submitted' && (
+                  <div className="status-actions">
+                    <textarea
+                      placeholder="Add feedback..."
+                      id="feedback-input"
+                      className="feedback-input"
+                    />
+                    <button 
+                      onClick={() => {
+                        const feedback = document.getElementById('feedback-input').value;
+                        reviewSubmission(selectedSubmission._id, 'Approved', feedback);
+                      }} 
+                      className="btn-sm btn-success"
+                    >
+                      Approve
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const feedback = document.getElementById('feedback-input').value;
+                        reviewSubmission(selectedSubmission._id, 'Rejected', feedback);
+                      }} 
+                      className="btn-sm btn-danger"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+                
                 <button onClick={() => setSelectedSubmission(null)} className="btn-secondary mt-20">Close</button>
               </div>
             )}
