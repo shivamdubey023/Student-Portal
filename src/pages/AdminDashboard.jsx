@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Header from '../components/Header';
 import '../styles.css';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -188,7 +190,7 @@ export default function AdminDashboard() {
 
   const logout = () => {
     localStorage.clear();
-    window.location.href = '/login';
+    navigate('/login');
   };
   return (
     <div className="admin-container">
@@ -204,6 +206,7 @@ export default function AdminDashboard() {
         ]}
         currentNav={activeTab}
         onNavClick={setActiveTab}
+        onLogout={logout}
       />
 
       <div className="admin-content">

@@ -1,4 +1,4 @@
-import React, {useState} from 'react'
+import React, {useState, useEffect} from 'react'
 import api from '../services/api'
 import { useNavigate } from 'react-router-dom'
 
@@ -9,6 +9,14 @@ export default function Login(){
   const [msg, setMsg] = useState(null)
   const [loading, setLoading] = useState(false)
   const nav = useNavigate()
+
+  // Reset form when component mounts (after logout)
+  useEffect(() => {
+    setUsername('')
+    setPassword('')
+    setMsg(null)
+    setLoading(false)
+  }, [])
 
   const toggleRole = () => setRole(r => r === 'student' ? 'admin' : 'student')
 
@@ -55,7 +63,7 @@ export default function Login(){
             </div>
           )}
 
-          <form onSubmit={submit}>
+          <form onSubmit={submit} key={`login-form-${role}`}>
             <div className="form-group">
               <label>Username</label>
               <input 
@@ -64,6 +72,8 @@ export default function Login(){
                 value={username} 
                 onChange={e=>setUsername(e.target.value)}
                 disabled={loading}
+                autoComplete="username"
+                required
               />
             </div>
 
@@ -75,10 +85,12 @@ export default function Login(){
                 value={password} 
                 onChange={e=>setPassword(e.target.value)}
                 disabled={loading}
+                autoComplete="current-password"
+                required
               />
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading || !username || !password}>
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import Header from '../components/Header'
 import StudentProfile from './StudentProfile'
@@ -6,6 +7,7 @@ import ExploreCourses from './ExploreCourses'
 import '../styles.css'
 
 export default function StudentDashboard(){
+  const navigate = useNavigate()
   const [activeView, setActiveView] = useState('dashboard')
   const [courses, setCourses] = useState([])
   const [assignments, setAssignments] = useState([])
@@ -111,7 +113,7 @@ export default function StudentDashboard(){
     }
   }
 
-  const logout = ()=>{ localStorage.clear(); window.location.href = '/login' }
+  const logout = ()=>{ localStorage.clear(); navigate('/login') }
 
   // Render profile or explore pages
   if (activeView === 'profile') {
@@ -126,6 +128,7 @@ export default function StudentDashboard(){
           ]}
           currentNav={activeView}
           onNavClick={setActiveView}
+          onLogout={logout}
         />
         <StudentProfile />
       </>
@@ -144,6 +147,7 @@ export default function StudentDashboard(){
           ]}
           currentNav={activeView}
           onNavClick={setActiveView}
+          onLogout={logout}
         />
         <ExploreCourses />
       </>
@@ -154,7 +158,7 @@ export default function StudentDashboard(){
   if (examData) {
     return (
       <div>
-        <Header userType="student" navigation={[]} currentNav="" onNavClick={() => {}} />
+        <Header userType="student" navigation={[]} currentNav="" onNavClick={() => {}} onLogout={logout} />
         <div className="container">
           <div className="card">
             <h2>{examData.title}</h2>
@@ -202,7 +206,7 @@ export default function StudentDashboard(){
   if (selectedAssignment) {
     return (
       <div>
-        <Header userType="student" navigation={[]} currentNav="" onNavClick={() => {}} />
+        <Header userType="student" navigation={[]} currentNav="" onNavClick={() => {}} onLogout={logout} />
         <div className="container">
           <div className="card">
             <h2>{selectedAssignment.title}</h2>
@@ -295,6 +299,7 @@ export default function StudentDashboard(){
           setActiveView(navId);
           setSelectedCourse(null);
         }}
+        onLogout={logout}
       />
 
       <div className="container">

@@ -1,10 +1,15 @@
 import React from 'react';
 import '../styles.css';
 
-export default function Header({ userType = 'student', navigation = [], currentNav = null, onNavClick = null }) {
+export default function Header({ userType = 'student', navigation = [], currentNav = null, onNavClick = null, onLogout = null }) {
   const logout = () => {
-    localStorage.clear();
-    window.location.href = '/login';
+    if (onLogout) {
+      onLogout();
+    } else {
+      // Fallback for backward compatibility
+      localStorage.clear();
+      window.location.href = '/login';
+    }
   };
 
   return (
