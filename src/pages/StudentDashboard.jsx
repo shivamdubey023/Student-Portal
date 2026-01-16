@@ -7,13 +7,6 @@ import ExploreCourses from './ExploreCourses'
 import '../styles.css'
 import bcrypt from 'bcryptjs'
 
-let useMockDB = false;
-// Exported function to set mock mode
-router.setMockMode = (mock) => { useMockDB = mock; };
-
-// Enable mock mode on courses, students, submissions, and admin routes
-require('./routes/admin').setMockMode(true);
-
 export default function StudentDashboard(){
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState('dashboard')
