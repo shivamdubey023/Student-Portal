@@ -3,7 +3,7 @@ import api from '../services/api'
 import { useNavigate } from 'react-router-dom'
 
 export default function Login(){
-  const [email, setEmail] = useState('')
+  const [usernameOrEmail, setUsernameOrEmail] = useState('')
   const [password, setPassword] = useState('')
   const [msg, setMsg] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -11,7 +11,7 @@ export default function Login(){
 
   // Reset form when component mounts (after logout)
   useEffect(() => {
-    setEmail('')
+    setUsernameOrEmail('')
     setPassword('')
     setMsg(null)
     setLoading(false)
@@ -21,7 +21,7 @@ export default function Login(){
     e.preventDefault()
     setLoading(true)
     try{
-      const body = { email, password }
+      const body = { usernameOrEmail, password }
       const res = await api.post('/api/auth/login', body)
       const { token, role: returnedRole, userId } = res.data
       localStorage.setItem('token', token)
@@ -56,14 +56,14 @@ export default function Login(){
 
           <form onSubmit={submit}>
             <div className="form-group">
-              <label>Email</label>
+              <label>Username or Email</label>
               <input 
-                type="email"
-                placeholder="you@example.com"
-                value={email} 
-                onChange={e=>setEmail(e.target.value)}
+                type="text"
+                placeholder="username or email"
+                value={usernameOrEmail} 
+                onChange={e=>setUsernameOrEmail(e.target.value)}
                 disabled={loading}
-                autoComplete="email"
+                autoComplete="username"
                 required
               />
             </div>
@@ -81,7 +81,7 @@ export default function Login(){
               />
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading || !email || !password}>
+            <button type="submit" className="btn-primary" disabled={loading || !usernameOrEmail || !password}>
               {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
