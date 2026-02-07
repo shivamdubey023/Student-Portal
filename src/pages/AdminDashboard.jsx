@@ -19,10 +19,10 @@ export default function AdminDashboard() {
   const [newCourse, setNewCourse] = useState({ 
     title: '', description: '', duration: '1 Month', mode: 'Remote', 
     category: 'Core Training', tools: [], learnTopics: [], certification: '',
-    startDate: '', totalWeeks: 4
+    validityMonths: 1, totalWeeks: 4
   });
   const [newAssignment, setNewAssignment] = useState({
-    courseId: '', title: '', description: '', blogLinks: [], githubLinks: [], studyMaterials: [],
+    courseId: '', title: '', description: '', type: 'mini', blogLinks: [], githubLinks: [], studyMaterials: [],
     dueDate: '', repositoryUrl: '', instructions: '', order: 1, week: 1, releaseDate: ''
   });
   const [newExam, setNewExam] = useState({
@@ -94,15 +94,14 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const courseData = {
-        ...newCourse,
-        startDate: newCourse.startDate ? new Date(newCourse.startDate) : undefined
+        ...newCourse
       };
       const res = await api.post('/api/courses', courseData);
       setMsg({ type: 'success', text: `Course created: ${res.data.title}` });
       setNewCourse({ 
         title: '', description: '', duration: '1 Month', mode: 'Remote', 
         category: 'Core Training', tools: [], learnTopics: [], certification: '',
-        startDate: '', totalWeeks: 4
+        validityMonths: 1, totalWeeks: 4
       });
       loadDashboard();
     } catch (err) {
@@ -133,8 +132,8 @@ export default function AdminDashboard() {
       await api.post(`/api/admin/courses/${newAssignment.courseId}/assignments`, newAssignment);
       setMsg({ type: 'success', text: 'Assignment created successfully' });
       setNewAssignment({
-        courseId: '', title: '', description: '', blogLinks: [], githubLinks: [], studyMaterials: [],
-        dueDate: '', repositoryUrl: '', instructions: '', order: 1
+        courseId: '', title: '', description: '', type: 'mini', blogLinks: [], githubLinks: [], studyMaterials: [],
+        dueDate: '', repositoryUrl: '', instructions: '', order: 1, week: 1, releaseDate: ''
       });
       loadDashboard();
     } catch (err) {
@@ -338,7 +337,6 @@ export default function AdminDashboard() {
                       <div key={student._id} className="list-item">
                         <div>
                           <strong>{student.name || student.username}</strong>
-                          <div className="text-secondary">{student.rollId || 'No Roll ID'}</div>
                           <div className="text-secondary small">{student.email}</div>
                         </div>
                         <div className="actions">
@@ -359,9 +357,6 @@ export default function AdminDashboard() {
                   <div><strong>Name:</strong> {selectedStudent.name}</div>
                   <div><strong>Username:</strong> {selectedStudent.username}</div>
                   <div><strong>Email:</strong> {selectedStudent.email}</div>
-                  <div><strong>Password:</strong> <code>{selectedStudent.password || 'N/A'}</code></div>
-                  <div><strong>Roll ID:</strong> {selectedStudent.rollId}</div>
-                  <div><strong>Student ID:</strong> {selectedStudent.studentId}</div>
                   <div><strong>Status:</strong> {selectedStudent.locked ? 'Locked' : 'Active'}</div>
                   <div><strong>Courses Enrolled:</strong> {selectedStudent.courses?.length || 0}</div>
                 </div>
@@ -421,15 +416,6 @@ export default function AdminDashboard() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Start Date</label>
-                    <input
-                      type="date"
-                      value={newCourse.startDate}
-                      onChange={(e) => setNewCourse({ ...newCourse, startDate: e.target.value })}
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="form-group">
                     <label>Total Weeks</label>
                     <input
                       type="number"
@@ -439,6 +425,17 @@ export default function AdminDashboard() {
                       max="12"
                       disabled={loading}
                     />
+                  </div>
+                  <div className="form-group">
+                    <label>Validity (Months)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newCourse.validityMonths}
+                      onChange={(e) => setNewCourse({ ...newCourse, validityMonths: parseInt(e.target.value) })}
+                      disabled={loading}
+                    />
+                    <p className="text-secondary small">Use 0 for lifetime access.</p>
                   </div>
                   <button type="submit" className="btn-primary" disabled={loading}>
                     {loading ? 'Creating...' : 'Create Course'}
@@ -501,15 +498,27 @@ export default function AdminDashboard() {
                     disabled={loading}
                   />
                 </div>
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    value={newAssignment.description}
-                    onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-                    required
-                    disabled={loading}
-                  />
-                </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      value={newAssignment.description}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Assignment Type</label>
+                    <select
+                      value={newAssignment.type}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, type: e.target.value })}
+                      disabled={loading}
+                    >
+                      <option value="mini">Mini Project</option>
+                      <option value="major">Major Project</option>
+                      <option value="git">Git Task</option>
+                    </select>
+                  </div>
                 <div className="form-group">
                   <label>Blog Links (one per line)</label>
                   <textarea

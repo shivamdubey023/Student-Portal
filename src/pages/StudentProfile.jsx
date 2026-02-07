@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import Header from '../components/Header';
 import '../styles.css';
 
 export default function StudentProfile() {
+  const nav = useNavigate();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({});
   const [error, setError] = useState(null);
+  const [pwdForm, setPwdForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwdMsg, setPwdMsg] = useState(null);
 
   useEffect(() => {
     fetchProfile();
@@ -23,7 +26,6 @@ export default function StudentProfile() {
       }
       const response = await api.get(`/api/students/${userId}`);
       setStudent(response.data);
-      setFormData(response.data);
       setError(null);
       setLoading(false);
     } catch (err) {
@@ -33,22 +35,23 @@ export default function StudentProfile() {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleUpdateProfile = async (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
+    setPwdMsg(null);
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      setPwdMsg({ type: 'error', text: 'New password and confirm password do not match' });
+      return;
+    }
     try {
       const userId = localStorage.getItem('userId');
-      const response = await api.put(`/api/students/${userId}`, formData);
-      setStudent(response.data);
-      setEditMode(false);
-      alert('Profile updated successfully');
+      await api.post(`/api/students/${userId}/change-password`, {
+        oldPassword: pwdForm.oldPassword,
+        newPassword: pwdForm.newPassword
+      });
+      setPwdMsg({ type: 'success', text: 'Password updated successfully' });
+      setPwdForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      console.error('Error updating profile:', err);
-      alert('Failed to update profile');
+      setPwdMsg({ type: 'error', text: err.response?.data?.error || 'Failed to update password' });
     }
   };
 
@@ -57,65 +60,22 @@ export default function StudentProfile() {
   if (!student) return <p className="error">Profile not found</p>;
 
   return (
-    <div className="profile-container">
-      <h1>My Profile</h1>
-      
-      {editMode ? (
-        <form onSubmit={handleUpdateProfile} className="profile-form">
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name || ''}
-              onChange={handleInputChange}
-              placeholder="Full Name"
-            />
-          </div>
-          <div className="form-group">
-            <label>Username:</label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username || ''}
-              disabled
-              className="disabled-input"
-            />
-          </div>
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email || ''}
-              onChange={handleInputChange}
-              placeholder="Email Address"
-            />
-          </div>
-          <div className="form-group">
-            <label>Student ID:</label>
-            <input
-              type="text"
-              value={student.studentId || 'Not assigned'}
-              disabled
-              className="disabled-input"
-            />
-          </div>
-          <div className="form-group">
-            <label>Roll ID:</label>
-            <input
-              type="text"
-              value={student.rollId || 'Not assigned'}
-              disabled
-              className="disabled-input"
-            />
-          </div>
-          <div className="form-actions">
-            <button onClick={() => handleUpdateProfile(e)} className="btn-primary">Save Changes</button>
-            <button type="button" onClick={() => setEditMode(false)} className="btn-secondary">Cancel</button>
-          </div>
-        </form>
-      ) : (
+    <div>
+      <Header
+        userType="student"
+        navigation={[
+          { id: 'dashboard', label: 'Dashboard' },
+          { id: 'courses', label: 'My Courses' },
+          { id: 'assignments', label: 'Assignments' },
+          { id: 'progress', label: 'Progress' },
+          { id: 'profile', label: 'Profile' }
+        ]}
+        currentNav="profile"
+        onNavClick={(id) => nav(`/student/${id}`)}
+      />
+      <div className="profile-container">
+        <h1>My Profile</h1>
+
         <div className="profile-view">
           <div className="profile-card">
             <div className="profile-row">
@@ -131,23 +91,49 @@ export default function StudentProfile() {
               <span className="value">{student.email || 'Not set'}</span>
             </div>
             <div className="profile-row">
-              <span className="label">Student ID:</span>
-              <span className="value">{student.studentId || 'Not assigned'}</span>
-            </div>
-            <div className="profile-row">
-              <span className="label">Roll ID (Certificate):</span>
-              <span className="value">{student.rollId || 'Not assigned'}</span>
-            </div>
-            <div className="profile-row">
               <span className="label">Account Status:</span>
               <span className={`value ${student.locked ? 'locked' : 'active'}`}>
                 {student.locked ? 'Locked' : 'Active'}
               </span>
             </div>
           </div>
-          <button onClick={() => setEditMode(true)} className="btn-primary">Edit Profile</button>
         </div>
-      )}
+
+        <div className="profile-card" style={{ marginTop: 20 }}>
+          <h3>Change Password</h3>
+          {pwdMsg && <div className={`message ${pwdMsg.type}`}>{pwdMsg.text}</div>}
+          <form onSubmit={handleChangePassword} className="profile-form">
+            <div className="form-group">
+              <label>Old Password</label>
+              <input
+                type="password"
+                value={pwdForm.oldPassword}
+                onChange={(e) => setPwdForm({ ...pwdForm, oldPassword: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>New Password</label>
+              <input
+                type="password"
+                value={pwdForm.newPassword}
+                onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Confirm Password</label>
+              <input
+                type="password"
+                value={pwdForm.confirmPassword}
+                onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
+                required
+              />
+            </div>
+            <button type="submit" className="btn-primary">Update Password</button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

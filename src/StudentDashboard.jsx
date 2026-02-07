@@ -20,6 +20,7 @@ export default function StudentDashboard(){
   const [submitPRUrl, setSubmitPRUrl] = useState('')
   const [msg, setMsg] = useState(null)
   const [loading, setLoading] = useState(false)
+  const currentCourse = selectedCourse ? courses.find(c => c.courseId === selectedCourse) : null
 
   useEffect(() => {
     loadCourses()
@@ -111,6 +112,11 @@ export default function StudentDashboard(){
     } finally {
       setLoading(false)
     }
+  }
+
+  const purchaseCertificate = () => {
+    if (!currentCourse) return
+    setMsg({ type: 'info', text: 'Certificate purchase is not enabled yet. Please contact your admin.' })
   }
 
   const logout = ()=>{ localStorage.clear(); navigate('/login') }
@@ -213,33 +219,33 @@ export default function StudentDashboard(){
             <p>{selectedAssignment.description}</p>
 
             <h3>Study Materials</h3>
-            {selectedAssignment.blogLinks.length > 0 && (
+            {(selectedAssignment.blogLinks || []).length > 0 && (
               <div>
                 <h4>Blog Links:</h4>
                 <ul>
-                  {selectedAssignment.blogLinks.map((link, i) => (
+                  {(selectedAssignment.blogLinks || []).map((link, i) => (
                     <li key={i}><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {selectedAssignment.githubLinks.length > 0 && (
+            {(selectedAssignment.githubLinks || []).length > 0 && (
               <div>
                 <h4>GitHub Reference Links:</h4>
                 <ul>
-                  {selectedAssignment.githubLinks.map((link, i) => (
+                  {(selectedAssignment.githubLinks || []).map((link, i) => (
                     <li key={i}><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></li>
                   ))}
                 </ul>
               </div>
             )}
 
-            {selectedAssignment.studyMaterials.length > 0 && (
+            {(selectedAssignment.studyMaterials || []).length > 0 && (
               <div>
                 <h4>Study Materials:</h4>
                 <ul>
-                  {selectedAssignment.studyMaterials.map((link, i) => (
+                  {(selectedAssignment.studyMaterials || []).map((link, i) => (
                     <li key={i}><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></li>
                   ))}
                 </ul>
@@ -450,11 +456,10 @@ export default function StudentDashboard(){
                   <div className="card">
                     <h3>📝 Exams</h3>
                     <div className="exam-list">
-                      {courses.find(c => c.courseId === selectedCourse)?.exams.total > 0 ? (
-                        Array.from({ length: courses.find(c => c.courseId === selectedCourse).exams.total }, (_, i) => i + 1).map(order => {
-                          const course = courses.find(c => c.courseId === selectedCourse);
-                          const isCompleted = course.exams.completed.includes(order);
-                          const isPassed = course.exams.passed.includes(order);
+                      {currentCourse?.exams.total > 0 ? (
+                        Array.from({ length: currentCourse.exams.total }, (_, i) => i + 1).map(order => {
+                          const isCompleted = currentCourse.exams.completed.includes(order);
+                          const isPassed = currentCourse.exams.passed.includes(order);
 
                           return (
                             <div key={order} className={`exam-item ${isPassed ? 'passed' : isCompleted ? 'failed' : 'available'}`}>
@@ -482,18 +487,20 @@ export default function StudentDashboard(){
                   </div>
 
                   {/* Certificate Section */}
-                  {courses.find(c => c.courseId === selectedCourse)?.eligibleForCertificate && (
+                  {currentCourse?.eligibleForCertificate && (
                     <div className="card">
                       <h3>🎉 Certificate</h3>
                       <p>You have completed all requirements for this course!</p>
                       <div className="certificate-info">
-                        <p><strong>Fee:</strong> ₹{courses.find(c => c.courseId === selectedCourse).certificateFee}</p>
+                        <p><strong>Fee:</strong> ₹{currentCourse.certificateFee}</p>
                         <p><em>This fee covers server and infrastructure costs only.</em></p>
                       </div>
-                      {courses.find(c => c.courseId === selectedCourse).certificateIssued ? (
+                      {currentCourse.certificateIssued ? (
                         <div className="success-message">Certificate has been issued!</div>
                       ) : (
-                        <button className="btn-primary">Purchase Certificate</button>
+                        <button className="btn-primary" onClick={purchaseCertificate} disabled={loading}>
+                          Purchase Certificate
+                        </button>
                       )}
                     </div>
                   )}
