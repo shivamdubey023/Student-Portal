@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import AdminDashboard from './pages/AdminDashboard'
+import ExploreCourses from './pages/ExploreCourses'
 import StudentDashboard from './pages/StudentDashboard.jsx'
 import StudentCourses from './pages/StudentCourses.jsx'
 import StudentCourseView from './pages/StudentCourseView.jsx'
@@ -21,6 +22,8 @@ const Protected = ({role, children}) => {
 export default function App(){
   return (
     <Routes>
+      <Route path="/" element={<ExploreCourses/>} />
+      <Route path="/explore" element={<ExploreCourses/>} />
       <Route path="/login" element={<Login/>} />
       <Route path="/admin" element={<Protected role="admin"><AdminDashboard/></Protected>} />
       <Route path="/admin/dashboard" element={<Protected role="admin"><AdminDashboard/></Protected>} />
@@ -31,7 +34,6 @@ export default function App(){
       <Route path="/student/assignments" element={<Protected role="student"><StudentAssignments/></Protected>} />
       <Route path="/student/progress" element={<Protected role="student"><StudentProgress/></Protected>} />
       <Route path="/student/profile" element={<Protected role="student"><StudentProfile/></Protected>} />
-      <Route path="/" element={<Navigate to="/login" />} />
     </Routes>
   )
 }
